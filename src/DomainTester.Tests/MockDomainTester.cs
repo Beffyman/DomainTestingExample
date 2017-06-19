@@ -16,10 +16,18 @@ using System.Threading.Tasks;
 
 namespace DomainTester.Tests
 {
-	public class MockDomainTester : IDisposable
+	public class MockDomainTester<T> : IDisposable where T : Controller
 	{
 		protected Mock<DomainTesterContext> _mockContext;
-		protected TestController _controller;
+		protected T _controller;
+
+		public T Object
+		{
+			get
+			{
+				return _controller;
+			}
+		}
 
 		protected IServiceProvider _serviceProvider;
 
@@ -33,11 +41,11 @@ namespace DomainTester.Tests
 			ServiceCollection services = new ServiceCollection();
 			services.AddSingleton(_mockContext.Object);
 			services.AddTransient<ITestService, TestService>();
-			services.AddTransient<TestController>();
+			services.AddTransient<T>();
 
 			_serviceProvider = services.BuildServiceProvider();
 
-			_controller = _serviceProvider.GetService<TestController>();
+			_controller = _serviceProvider.GetService<T>();
 		}
 
 		private void SetupDbSets()
@@ -120,18 +128,6 @@ namespace DomainTester.Tests
 
 			_mockContext.Setup(expression).Returns(mockTestObjects.Object);
 		}
-
-		public IActionResult Get(int id)
-		{
-			return _controller.Get(id);
-		}
-
-		public IActionResult Create(CreateTestObjectCommand command)
-		{
-			return _controller.Create(command);
-		}
-
-
 
 		#region IDisposable Support
 		private bool disposedValue = false; // To detect redundant calls

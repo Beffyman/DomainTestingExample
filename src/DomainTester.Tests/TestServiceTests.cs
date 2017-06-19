@@ -19,20 +19,20 @@ namespace DomainTester.Tests
 	[TestClass]
 	public class TestServiceTests
 	{
-		protected MockDomainTester _controller;
+		protected MockDomainTester<TestController> _mockController;
 
 		[TestInitialize]
 
 		public void Setup()
 		{
-			_controller = new MockDomainTester();
+			_mockController = new MockDomainTester<TestController>();
 		}
 
 		[TestCleanup]
 
 		public void Cleanup()
 		{
-			_controller.Dispose();
+			_mockController.Dispose();
 		}
 
 
@@ -54,10 +54,10 @@ namespace DomainTester.Tests
 				mockObject
 			};
 
-			_controller.SetupContext(db => db.TestObjects, testObjectsQueryable);
+			_mockController.SetupContext(db => db.TestObjects, testObjectsQueryable);
 
 
-			var result = _controller.Get(mockObject.Id);
+			var result = _mockController.Object.Get(mockObject.Id);
 
 			if (result is ObjectResult or)
 			{
@@ -85,10 +85,10 @@ namespace DomainTester.Tests
 			{
 			};
 
-			_controller.SetupContext(db => db.TestObjects, testObjectsQueryable);
+			_mockController.SetupContext(db => db.TestObjects, testObjectsQueryable);
 
 
-			var result = _controller.Create(command);
+			var result = _mockController.Object.Create(command);
 
 			if (result is ObjectResult or)
 			{

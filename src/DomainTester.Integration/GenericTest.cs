@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using DomainTester.Service.Dtos;
 using NUnit.Framework;
 using DomainTester.Domain.Tables;
+using DomainTester.Service.Controllers;
 
 namespace DomainTester.Integration
 {
@@ -29,7 +30,7 @@ namespace DomainTester.Integration
 		{
 			var model = _context.Get<TestFeatureModel>(nameof(TestFeatureModel));
 
-			var controller = new MockDomainTester();
+			var controller = new MockDomainTester<TestController>();
 			model.Controller = controller;
 			model.Controller.SetupContext(x => x.TestObjects, new List<TestObject>
 			{
@@ -60,7 +61,7 @@ namespace DomainTester.Integration
 		{
 			var model = _context.Get<TestFeatureModel>(nameof(TestFeatureModel));
 
-			model.GetResult = model.Controller.Get(model.GetId);
+			model.GetResult = model.Controller.Object.Get(model.GetId);
 
 			_context.Set(model, nameof(TestFeatureModel));
 		}
