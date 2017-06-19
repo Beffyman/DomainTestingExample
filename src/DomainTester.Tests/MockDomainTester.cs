@@ -39,10 +39,14 @@ namespace DomainTester.Tests
 			SetupDbSets();
 
 			ServiceCollection services = new ServiceCollection();
-			services.AddSingleton(_mockContext.Object);
 
 			//Setup your DI
-			services.AddTransient<ITestService, TestService>();
+			var servicesStartupConfig = new Startup();
+			servicesStartupConfig.ConfigureServices(services);
+
+			var existingContext = services.SingleOrDefault(x => x.ServiceType == typeof(DomainTesterContext));
+			services.Remove(existingContext);//Remove REAL context
+			services.AddSingleton(_mockContext.Object);//Insert mock context
 
 
 			services.AddTransient<T>();
