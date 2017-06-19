@@ -1,4 +1,5 @@
-﻿using DomainTester.Service.Controllers;
+﻿using DomainTester.Domain;
+using DomainTester.Service.Controllers;
 using DomainTester.Tests;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -11,7 +12,7 @@ namespace DomainTester.Integration
 {
 	public class TestFeatureModel
 	{
-		public MockDomainTester<TestController> Controller { get; set; }
+		public MockDomainTester<TestController, DomainTesterContext> Controller { get; set; }
 
 
 		public int GetId { get; set; }

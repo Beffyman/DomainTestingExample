@@ -16,12 +16,14 @@ using System.Threading.Tasks;
 
 namespace DomainTester.Tests
 {
-	public class MockDomainTester<T> : IDisposable where T : Controller
+	public class MockDomainTester<TController,TContext> : IDisposable
+		where TController : Controller
+		where TContext : DbContext
 	{
-		protected Mock<DomainTesterContext> _mockContext;
-		protected T _controller;
+		protected Mock<TContext> _mockContext;
+		protected TController _controller;
 
-		public T Object
+		public TController Object
 		{
 			get
 			{
@@ -33,7 +35,7 @@ namespace DomainTester.Tests
 
 		public MockDomainTester()
 		{
-			_mockContext = new Mock<DomainTesterContext>();
+			_mockContext = new Mock<TContext>();
 			_mockContext.Setup(x => x.SaveChanges()).Returns(MockSaveChanges);
 
 			SetupDbSets();
@@ -44,16 +46,16 @@ namespace DomainTester.Tests
 			var servicesStartupConfig = new Startup();
 			servicesStartupConfig.ConfigureServices(services);
 
-			var existingContext = services.SingleOrDefault(x => x.ServiceType == typeof(DomainTesterContext));
+			var existingContext = services.SingleOrDefault(x => x.ServiceType == typeof(TContext));
 			services.Remove(existingContext);//Remove REAL context
 			services.AddSingleton(_mockContext.Object);//Insert mock context
 
 
-			services.AddTransient<T>();
+			services.AddTransient<TController>();
 
 			_serviceProvider = services.BuildServiceProvider();
 
-			_controller = _serviceProvider.GetService<T>();
+			_controller = _serviceProvider.GetService<TController>();
 		}
 
 		private void SetupDbSets()
@@ -70,14 +72,12 @@ namespace DomainTester.Tests
 				var mockList = Activator.CreateInstance(genericList);
 
 
-				ParameterExpression parameter = Expression.Parameter(typeof(DomainTesterContext), "i");
+				ParameterExpression parameter = Expression.Parameter(typeof(TContext), "i");
 				MemberExpression property = Expression.Property(parameter, dbSetProperty.Name);
 				var queryableType = typeof(DbSet<>).MakeGenericType(entityType);
-				var delegateType = typeof(Func<,>).MakeGenericType(typeof(DomainTesterContext), queryableType);
+				var delegateType = typeof(Func<,>).MakeGenericType(typeof(TContext), queryableType);
 
 				var expression = Expression.Lambda(delegateType, property, parameter);
-
-				//SetupContext(,mockList);
 
 				var iType = this.GetType();
 				var method = iType.GetTypeInfo().DeclaredMethods.SingleOrDefault(x => x.Name == nameof(SetupContext));
@@ -120,7 +120,7 @@ namespace DomainTester.Tests
 			}
 		}
 
-		public void SetupContext<K>(Expression<Func<DomainTesterContext, DbSet<K>>> expression, IList<K> enumerable) where K : class
+		public void SetupContext<K>(Expression<Func<TContext, DbSet<K>>> expression, IList<K> enumerable) where K : class
 		{
 			var queryable = enumerable.AsQueryable();
 

@@ -19,13 +19,13 @@ namespace DomainTester.Tests
 	[TestClass]
 	public class TestServiceTests
 	{
-		protected MockDomainTester<TestController> _mockController;
+		protected MockDomainTester<TestController, DomainTesterContext> _mockController;
 
 		[TestInitialize]
 
 		public void Setup()
 		{
-			_mockController = new MockDomainTester<TestController>();
+			_mockController = new MockDomainTester<TestController, DomainTesterContext>();
 		}
 
 		[TestCleanup]

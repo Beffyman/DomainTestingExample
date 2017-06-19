@@ -10,6 +10,7 @@ using DomainTester.Service.Dtos;
 using NUnit.Framework;
 using DomainTester.Domain.Tables;
 using DomainTester.Service.Controllers;
+using DomainTester.Domain;
 
 namespace DomainTester.Integration
 {
@@ -30,7 +31,7 @@ namespace DomainTester.Integration
 		{
 			var model = _context.Get<TestFeatureModel>(nameof(TestFeatureModel));
 
-			var controller = new MockDomainTester<TestController>();
+			var controller = new MockDomainTester<TestController, DomainTesterContext>();
 			model.Controller = controller;
 			model.Controller.SetupContext(x => x.TestObjects, new List<TestObject>
 			{
