@@ -24,28 +24,41 @@ namespace DomainTester.Tests
 
 		protected IServiceProvider _serviceProvider;
 
+		private void SetPrimaryKey<T>(DbSet<T> dbSet) where T : class, IEntity
+		{
+			int max = 0;
+			if (dbSet.Any())
+			{
+				max = dbSet.Max(x => x.Id);
+			}
+
+			foreach (var entity in dbSet.Where(x => x.Id == 0).ToList())
+			{
+				entity.Id = ++max;
+			}
+		}
+
 		[TestInitialize]
 
 		public void Setup()
 		{
-			void SetIdentifiers<T>(DbSet<T> dbSet) where T : class, IEntity
-			{
-				int max = 0;
-				if (dbSet.Any())
-				{
-					max = dbSet.Max(x => x.Id);
-				}
 
-				foreach (var entity in dbSet.Where(x => x.Id == 0).ToList())
-				{
-					entity.Id = ++max;
-				}
-			}
 
 			_mockContext = new Mock<DomainTesterContext>();
 			_mockContext.Setup(x => x.SaveChanges()).Returns(() =>
 			{
-				SetIdentifiers(_mockContext.Object.TestObjects);
+				var type = _mockContext.Object.GetType();
+				var properties = type.GetProperties().Where(x => x.PropertyType.IsGenericType && x.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)).ToList();
+				foreach (var dbSetProperty in properties)
+				{
+					var dbSet = dbSetProperty.GetValue(_mockContext.Object);
+					var dbSetType = typeof(DbSet<>).MakeGenericType(dbSetProperty.PropertyType.GetGenericArguments());
+
+					var iType = this.GetType();
+					var method = iType.GetMethods(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SingleOrDefault(x => x.Name == nameof(SetPrimaryKey));
+					var genericMethod = method.MakeGenericMethod(dbSetProperty.PropertyType.GetGenericArguments());
+					genericMethod.Invoke(this, new object[] { dbSet });
+				}
 
 				return 1;
 			});
