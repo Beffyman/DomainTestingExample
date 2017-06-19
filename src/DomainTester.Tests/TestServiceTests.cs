@@ -19,90 +19,23 @@ namespace DomainTester.Tests
 	[TestClass]
 	public class TestServiceTests
 	{
-		protected Mock<DomainTesterContext> _mockContext;
-		protected TestController _controller;
-
-		protected IServiceProvider _serviceProvider;
-
-		private void SetPrimaryKey<T>(DbSet<T> dbSet) where T : class, IEntity
-		{
-			int max = 0;
-			if (dbSet.Any())
-			{
-				max = dbSet.Max(x => x.Id);
-			}
-
-			foreach (var entity in dbSet.Where(x => x.Id == 0).ToList())
-			{
-				entity.Id = ++max;
-			}
-		}
+		protected MockDomainTester _controller;
 
 		[TestInitialize]
 
 		public void Setup()
 		{
-
-
-			_mockContext = new Mock<DomainTesterContext>();
-			_mockContext.Setup(x => x.SaveChanges()).Returns(() =>
-			{
-				var type = _mockContext.Object.GetType();
-				var properties = type.GetProperties().Where(x => x.PropertyType.IsGenericType && x.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)).ToList();
-				foreach (var dbSetProperty in properties)
-				{
-					var dbSet = dbSetProperty.GetValue(_mockContext.Object);
-					var dbSetType = typeof(DbSet<>).MakeGenericType(dbSetProperty.PropertyType.GetGenericArguments());
-
-					var iType = this.GetType();
-					var method = iType.GetMethods(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SingleOrDefault(x => x.Name == nameof(SetPrimaryKey));
-					var genericMethod = method.MakeGenericMethod(dbSetProperty.PropertyType.GetGenericArguments());
-					genericMethod.Invoke(this, new object[] { dbSet });
-				}
-
-				return 1;
-			});
-
-
-
-
-
-			ServiceCollection services = new ServiceCollection();
-			services.AddSingleton(_mockContext.Object);
-			services.AddTransient<ITestService, TestService>();
-			services.AddTransient<TestController>();
-
-			_serviceProvider = services.BuildServiceProvider();
-
-			_controller = _serviceProvider.GetService<TestController>();
+			_controller = new MockDomainTester();
 		}
 
 		[TestCleanup]
 
 		public void Cleanup()
 		{
-			_serviceProvider = null;
-			_controller = null;
-			_mockContext = null;
+			_controller.Dispose();
 		}
 
 
-		private void MockDBSetWithList<T>(Expression<Func<DomainTesterContext, DbSet<T>>> expression, IList<T> enumerable) where T : class
-		{
-			var queryable = enumerable.AsQueryable();
-
-			Mock<DbSet<T>> mockTestObjects = new Mock<DbSet<T>>();
-
-			mockTestObjects.Setup(x => x.Create()).Returns(Activator.CreateInstance<T>());
-			mockTestObjects.Setup(x => x.Add(It.IsAny<T>())).Callback<T>((item) => enumerable.Add(item));
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
-
-
-			_mockContext.Setup(expression).Returns(mockTestObjects.Object);
-		}
 
 
 		[TestMethod]
@@ -121,7 +54,7 @@ namespace DomainTester.Tests
 				mockObject
 			};
 
-			MockDBSetWithList(db => db.TestObjects, testObjectsQueryable);
+			_controller.SetupContext(db => db.TestObjects, testObjectsQueryable);
 
 
 			var result = _controller.Get(mockObject.Id);
@@ -131,16 +64,11 @@ namespace DomainTester.Tests
 				if (or.Value is TestObjectDto dto)
 				{
 					Assert.AreEqual(dto.Id, mockObject.Id);
-				}
-				else
-				{
-					Assert.Fail("(result) did not return a TestObjectDto");
+					return;
 				}
 			}
-			else
-			{
-				Assert.Fail("(result) did not return a ObjectResult");
-			}
+
+			Assert.Fail("(result) did not return a ObjectResult");
 		}
 
 		[TestMethod]
@@ -157,7 +85,7 @@ namespace DomainTester.Tests
 			{
 			};
 
-			MockDBSetWithList(db => db.TestObjects, testObjectsQueryable);
+			_controller.SetupContext(db => db.TestObjects, testObjectsQueryable);
 
 
 			var result = _controller.Create(command);
@@ -167,16 +95,11 @@ namespace DomainTester.Tests
 				if (or.Value is TestObjectDto dto)
 				{
 					Assert.AreNotEqual(dto.Id, 0);
-				}
-				else
-				{
-					Assert.Fail("(result) did not return a TestObjectDto");
+					return;
 				}
 			}
-			else
-			{
-				Assert.Fail("(result) did not return a ObjectResult");
-			}
+
+			Assert.Fail("(result) did not return a ObjectResult");
 		}
 	}
 }
