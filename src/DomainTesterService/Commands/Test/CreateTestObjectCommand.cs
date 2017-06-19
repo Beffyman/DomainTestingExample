@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace DomainTester.Service.Commands.Test
 {
-	public class AddTestObjectCommand
+	public class CreateTestObjectCommand
 	{
 		public int A { get; set; }
 		public bool B { get; set; }

@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using DomainTester.Service.Commands.Test;
 
 namespace DomainTester.Tests
 {
@@ -27,7 +28,31 @@ namespace DomainTester.Tests
 
 		public void Setup()
 		{
+			void SetIdentifiers<T>(DbSet<T> dbSet) where T : class, IEntity
+			{
+				int max = 0;
+				if (dbSet.Any())
+				{
+					max = dbSet.Max(x => x.Id);
+				}
+
+				foreach (var entity in dbSet.Where(x => x.Id == 0).ToList())
+				{
+					entity.Id = ++max;
+				}
+			}
+
 			_mockContext = new Mock<DomainTesterContext>();
+			_mockContext.Setup(x => x.SaveChanges()).Returns(() =>
+			{
+				SetIdentifiers(_mockContext.Object.TestObjects);
+
+				return 1;
+			});
+
+
+
+
 
 			ServiceCollection services = new ServiceCollection();
 			services.AddSingleton(_mockContext.Object);
@@ -49,14 +74,19 @@ namespace DomainTester.Tests
 		}
 
 
-		private void MockDBSetWithQueryable<T>(Expression<Func<DomainTesterContext, DbSet<T>>> expression, IQueryable<T> queryable) where T : class
+		private void MockDBSetWithList<T>(Expression<Func<DomainTesterContext, DbSet<T>>> expression, IList<T> enumerable) where T : class
 		{
+			var queryable = enumerable.AsQueryable();
+
 			Mock<DbSet<T>> mockTestObjects = new Mock<DbSet<T>>();
 
+			mockTestObjects.Setup(x => x.Create()).Returns(Activator.CreateInstance<T>());
+			mockTestObjects.Setup(x => x.Add(It.IsAny<T>())).Callback<T>((item) => enumerable.Add(item));
 			mockTestObjects.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
 			mockTestObjects.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
 			mockTestObjects.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
 			mockTestObjects.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
+
 
 			_mockContext.Setup(expression).Returns(mockTestObjects.Object);
 		}
@@ -76,19 +106,54 @@ namespace DomainTester.Tests
 			var testObjectsQueryable = new List<TestObject>
 			{
 				mockObject
+			};
 
-			}.AsQueryable();
-
-			MockDBSetWithQueryable(db => db.TestObjects, testObjectsQueryable);
+			MockDBSetWithList(db => db.TestObjects, testObjectsQueryable);
 
 
-			var result = _controller.Get(1);
+			var result = _controller.Get(mockObject.Id);
 
 			if (result is ObjectResult or)
 			{
 				if (or.Value is TestObjectDto dto)
 				{
 					Assert.AreEqual(dto.Id, mockObject.Id);
+				}
+				else
+				{
+					Assert.Fail("(result) did not return a TestObjectDto");
+				}
+			}
+			else
+			{
+				Assert.Fail("(result) did not return a ObjectResult");
+			}
+		}
+
+		[TestMethod]
+		public void Create()
+		{
+			CreateTestObjectCommand command = new CreateTestObjectCommand
+			{
+				A = 12345,
+				B = true,
+				C = "HELLO"
+			};
+
+			var testObjectsQueryable = new List<TestObject>
+			{
+			};
+
+			MockDBSetWithList(db => db.TestObjects, testObjectsQueryable);
+
+
+			var result = _controller.Create(command);
+
+			if (result is ObjectResult or)
+			{
+				if (or.Value is TestObjectDto dto)
+				{
+					Assert.AreNotEqual(dto.Id, 0);
 				}
 				else
 				{

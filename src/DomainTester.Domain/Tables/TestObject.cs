@@ -5,8 +5,8 @@ using System.Text;
 
 namespace DomainTester.Domain.Tables
 {
-    public class TestObject
-    {
+    public class TestObject : IEntity
+	{
 		[Key]
 		public int Id { get; set; }
 		public int A { get; set; }

@@ -1,5 +1,6 @@
 ﻿using DomainTester.Domain;
 using DomainTester.Domain.Tables;
+using DomainTester.Service.Commands.Test;
 using DomainTester.Service.Dtos;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ namespace DomainTester.Service.Services
 	public interface ITestService
 	{
 		TestObjectDto Get(int id);
+		TestObjectDto Create(CreateTestObjectCommand command);
 	}
 
 	public class TestService : ITestService
@@ -30,6 +32,19 @@ namespace DomainTester.Service.Services
 				return new TestObjectDto(entity);
 			}
 			return null;
+		}
+
+		public TestObjectDto Create(CreateTestObjectCommand command)
+		{
+			var entity = _dbContext.TestObjects.Create();
+			entity.A = command.A;
+			entity.B = command.B;
+			entity.C = command.C;
+
+			_dbContext.TestObjects.Add(entity);
+			_dbContext.SaveChanges();
+
+			return new TestObjectDto(entity);
 		}
 	}
 }
