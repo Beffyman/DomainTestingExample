@@ -40,7 +40,11 @@ namespace DomainTester.Tests
 
 			ServiceCollection services = new ServiceCollection();
 			services.AddSingleton(_mockContext.Object);
+
+			//Setup your DI
 			services.AddTransient<ITestService, TestService>();
+
+
 			services.AddTransient<T>();
 
 			_serviceProvider = services.BuildServiceProvider();
@@ -98,7 +102,7 @@ namespace DomainTester.Tests
 		}
 
 
-		private void SetPrimaryKey<T>(DbSet<T> dbSet) where T : class, IEntity
+		private void SetPrimaryKey<K>(DbSet<K> dbSet) where K : class, IEntity
 		{
 			int max = 0;
 			if (dbSet.Any())
@@ -112,18 +116,18 @@ namespace DomainTester.Tests
 			}
 		}
 
-		public void SetupContext<T>(Expression<Func<DomainTesterContext, DbSet<T>>> expression, IList<T> enumerable) where T : class
+		public void SetupContext<K>(Expression<Func<DomainTesterContext, DbSet<K>>> expression, IList<K> enumerable) where K : class
 		{
 			var queryable = enumerable.AsQueryable();
 
-			Mock<DbSet<T>> mockTestObjects = new Mock<DbSet<T>>();
+			Mock<DbSet<K>> mockTestObjects = new Mock<DbSet<K>>();
 
-			mockTestObjects.Setup(x => x.Create()).Returns(Activator.CreateInstance<T>());
-			mockTestObjects.Setup(x => x.Add(It.IsAny<T>())).Callback<T>((item) => enumerable.Add(item));
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
-			mockTestObjects.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
+			mockTestObjects.Setup(x => x.Create()).Returns(Activator.CreateInstance<K>());
+			mockTestObjects.Setup(x => x.Add(It.IsAny<K>())).Callback<K>((item) => enumerable.Add(item));
+			mockTestObjects.As<IQueryable<K>>().Setup(m => m.Provider).Returns(queryable.Provider);
+			mockTestObjects.As<IQueryable<K>>().Setup(m => m.Expression).Returns(queryable.Expression);
+			mockTestObjects.As<IQueryable<K>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+			mockTestObjects.As<IQueryable<K>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
 
 
 			_mockContext.Setup(expression).Returns(mockTestObjects.Object);
