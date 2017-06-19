@@ -31,6 +31,9 @@ namespace DomainTester.Tests
 			}
 		}
 
+		/// <summary>
+		/// Container for all registered services, could replace w/ a castle.core implementation
+		/// </summary>
 		protected IServiceProvider _serviceProvider;
 
 		public MockDomainTester()
@@ -58,6 +61,9 @@ namespace DomainTester.Tests
 			_controller = _serviceProvider.GetService<TController>();
 		}
 
+		/// <summary>
+		/// Uses reflection to loop through all DbSets inside the TContext and provides them with a default value.
+		/// </summary>
 		private void SetupDbSets()
 		{
 			var type = _mockContext.Object.GetType();
@@ -87,6 +93,10 @@ namespace DomainTester.Tests
 
 		}
 
+		/// <summary>
+		/// Mocks the save changes function
+		/// </summary>
+		/// <returns></returns>
 		private int MockSaveChanges()
 		{
 			var type = _mockContext.Object.GetType();
@@ -105,7 +115,11 @@ namespace DomainTester.Tests
 			return 1;
 		}
 
-
+		/// <summary>
+		/// Finds entities with no primary key, and sets them to max of dbSet +1
+		/// </summary>
+		/// <typeparam name="K"></typeparam>
+		/// <param name="dbSet"></param>
 		private void SetPrimaryKey<K>(DbSet<K> dbSet) where K : class, IEntity
 		{
 			int max = 0;
@@ -120,6 +134,12 @@ namespace DomainTester.Tests
 			}
 		}
 
+		/// <summary>
+		/// Set up a DbSet with the list provided.
+		/// </summary>
+		/// <typeparam name="K"></typeparam>
+		/// <param name="expression"></param>
+		/// <param name="enumerable"></param>
 		public void SetupContext<K>(Expression<Func<TContext, DbSet<K>>> expression, IList<K> enumerable) where K : class
 		{
 			var queryable = enumerable.AsQueryable();
