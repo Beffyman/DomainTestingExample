@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using DomainTester.Domain;
 using DomainTester.Service.Services;
+using DomainTester.Service.Middleware;
 
 namespace DomainTester
 {
@@ -44,6 +45,7 @@ namespace DomainTester
             loggerFactory.AddDebug();
 
             app.UseMvc();
+			app.UseMiddleware<TransactionMiddleware>();
         }
     }
 }
